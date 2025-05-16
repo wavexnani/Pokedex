@@ -1,20 +1,26 @@
 from flask import Flask, jsonify, request
 from flask_restful import Api, Resource, reqparse
 from flask_sqlalchemy import SQLAlchemy
+from flask_cors import CORS
+from werkzeug.security import generate_password_hash, check_password_hash
 import requests
 
 app = Flask(__name__)
+CORS(app)
 api = Api(app)
+
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///pokemon.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 # ------------------ MODELS ------------------
+
 class UserModel(db.Model):
     __tablename__ = 'user_model'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     name = db.Column(db.String(80), nullable=False)
-    password = db.Column(db.String(128), nullable=False)
+    password = db.Column(db.String(200), nullable=False)  # store hashed password
 
 class CapturedModel(db.Model):
     __tablename__ = 'captured'
@@ -39,6 +45,7 @@ class FavoriteModel(db.Model):
     abilities = db.Column(db.String(200), nullable=False)
 
 # ------------------ PARSERS ------------------
+
 signup_args = reqparse.RequestParser()
 signup_args.add_argument('username', type=str, required=True)
 signup_args.add_argument('name', type=str, required=True)
@@ -58,22 +65,24 @@ pokemon_args.add_argument('types', type=str, required=True)
 pokemon_args.add_argument('abilities', type=str, required=True)
 
 # ------------------ RESOURCES ------------------
+
 class Signup(Resource):
     def post(self):
         args = signup_args.parse_args()
         if UserModel.query.filter_by(username=args['username']).first():
             return {"message": "Username already exists"}, 409
 
-        user = UserModel(**args)
+        hashed_password = generate_password_hash(args['password'])
+        user = UserModel(username=args['username'], name=args['name'], password=hashed_password)
         db.session.add(user)
         db.session.commit()
         return {"message": "User created successfully", "user_id": user.id}, 201
-
+    
 class Login(Resource):
     def post(self):
         args = login_args.parse_args()
         user = UserModel.query.filter_by(username=args['username']).first()
-        if user and user.password == args['password']:
+        if user and check_password_hash(user.password, args['password']):
             return {"message": "Login successful", "user_id": user.id}, 200
         return {"message": "Invalid credentials"}, 401
 
@@ -140,6 +149,7 @@ class DeleteFavorite(Resource):
         return {"message": "Deleted successfully"}, 200
 
 # ------------------ ROUTES ------------------
+
 api.add_resource(Signup, '/signup')
 api.add_resource(Login, '/login')
 
@@ -150,7 +160,6 @@ api.add_resource(DeleteCaptured, '/captured/delete/<int:capture_id>')
 api.add_resource(AddToFavorite, '/favorites/add')
 api.add_resource(GetFavorites, '/favorites/<int:user_id>')
 api.add_resource(DeleteFavorite, '/favorites/delete/<int:favorite_id>')
-
 
 @app.route('/api', methods=['GET'])
 def get_pokemon_data():
@@ -193,9 +202,7 @@ def get_pokemon_data():
 
     return jsonify(pokemon_entry)
 
-
-
-
 # ------------------ MAIN ------------------
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080, debug=True)

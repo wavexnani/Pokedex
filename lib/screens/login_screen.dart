@@ -1,6 +1,10 @@
-// ignore_for_file: avoid_print
+// ignore_for_file: avoid_print, use_build_context_synchronously
 
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
+import 'package:project_x/screens/register_screen.dart';
+import 'package:project_x/screens/test.dart';
 
 class LoginScreen extends StatelessWidget {
   LoginScreen({super.key});
@@ -75,8 +79,8 @@ class LoginScreen extends StatelessWidget {
                   ),
                   CustomTextField(
                       emailController: _emailController,
-                      text: "Email",
-                      icon: Icons.email),
+                      text: "Username",
+                      icon: Icons.person),
                   CustomTextField(
                     emailController: _passwordController,
                     text: "Password",
@@ -87,9 +91,44 @@ class LoginScreen extends StatelessWidget {
                     height: 40,
                   ),
                   ElevatedButton(
-                    onPressed: () {
-                      // Handle login logic here
-                      print("the login button was pressed");
+                    onPressed: () async {
+                      final response = await http.post(
+                        Uri.parse(
+                            'https://c67a-2409-40f3-2049-b65f-a512-cdfd-d2dd-6f03.ngrok-free.app/login'), // Change IP if using a real device
+                        headers: {"Content-Type": "application/json"},
+                        body: jsonEncode({
+                          "username": _emailController.text,
+                          "password": _passwordController.text,
+                        }),
+                      );
+
+                      if (response.statusCode == 200) {
+                        final data = jsonDecode(response.body);
+                        final userId = data['user_id'];
+                        print("Login successful! User ID: $userId");
+
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (context) => HomePage()),
+                        );
+                      } else {
+                        final error = jsonDecode(response.body)['message'];
+                        print("Login failed: $error");
+
+                        // Show error message (optional)
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: Text("Login Failed"),
+                            content: Text(error),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: Text("OK"),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.orange[700],
@@ -133,14 +172,22 @@ class LoginScreen extends StatelessWidget {
                           decoration: TextDecoration.none,
                         ),
                       ),
-                      Text(
-                        "Sign up",
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Roboto',
-                          color: Colors.orange[500],
-                          decoration: TextDecoration.none,
+                      GestureDetector(
+                        onTap: () => {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                                builder: (context) => RegisterScreen()),
+                          )
+                        },
+                        child: Text(
+                          "Sign up",
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Roboto',
+                            color: Colors.orange[500],
+                            decoration: TextDecoration.none,
+                          ),
                         ),
                       )
                     ],
