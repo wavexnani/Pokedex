@@ -2,9 +2,11 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:project_x/screens/indipoke_screen.dart';
+import 'package:project_x/screens/login_screen.dart';
 import 'package:project_x/screens/search_screen.dart';
 import 'package:project_x/utils/scrollable.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -17,6 +19,14 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     futurePokemonList = fetchPokemonDetails();
+  }
+
+  Future<void> logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => LoginScreen()),
+    );
   }
 
   Future<List<Map<String, dynamic>>> fetchPokemonDetails() async {
@@ -123,6 +133,7 @@ class _HomePageState extends State<HomePage> {
         ],
       ), // Dark background for a futuristic look
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: Text(
           'Pokédex',
           style: TextStyle(
@@ -135,16 +146,26 @@ class _HomePageState extends State<HomePage> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
-          IconButton(
-            icon: Icon(Icons.search, color: Colors.amberAccent),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => SearchPage(),
-                ),
-              );
-            },
+          Row(
+            children: [
+              IconButton(
+                icon: Icon(Icons.search, color: Colors.amberAccent),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => SearchPage(),
+                    ),
+                  );
+                },
+              ),
+              IconButton(
+                onPressed: () {
+                  logout();
+                },
+                icon: Icon(Icons.logout, color: Colors.amberAccent),
+              )
+            ],
           ),
         ],
       ),
