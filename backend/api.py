@@ -138,6 +138,7 @@ class GetFavorites(Resource):
             "abilities": p.abilities
         } for p in pokemons]
         return results, 200
+    
 
 class DeleteFavorite(Resource):
     def delete(self, favorite_id):
@@ -153,13 +154,45 @@ class DeleteFavorite(Resource):
 api.add_resource(Signup, '/signup')
 api.add_resource(Login, '/login')
 
-api.add_resource(AddToCaptured, '/captured/add')
 api.add_resource(GetCaptured, '/captured/<int:user_id>')
 api.add_resource(DeleteCaptured, '/captured/delete/<int:capture_id>')
 
 api.add_resource(AddToFavorite, '/favorites/add')
 api.add_resource(GetFavorites, '/favorites/<int:user_id>')
 api.add_resource(DeleteFavorite, '/favorites/delete/<int:favorite_id>')
+
+
+@app.route('/captured/add', methods=['POST'])
+def add_captured_pokemon():
+    data = request.get_json()
+
+    # Get username from request
+    username = data.get('username')
+    if not username:
+        return jsonify({'error': 'Username is required'}), 400
+
+    # Find user by username
+    user = UserModel.query.filter_by(username=username).first()
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    # Create CapturedPokemon with user.id
+    captured = CapturedModel(
+        user_id=user.id,
+        name=data.get('name'),
+        imageUrl=data.get('imageUrl'),
+        description=data.get('description'),
+        stats=data.get('stats'),
+        types=data.get('types'),
+        abilities=data.get('abilities')
+    )
+
+    db.session.add(captured)
+    db.session.commit()
+
+    return jsonify({'message': 'Captured Pokémon added successfully'}), 201
+
+
 
 @app.route('/api', methods=['GET'])
 def get_pokemon_data():

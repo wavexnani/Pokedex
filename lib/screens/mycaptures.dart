@@ -71,18 +71,23 @@ class _MyCapturesPageState extends State<MyCapturesPage> {
                   itemCount: capturedPokemons.length,
                   itemBuilder: (context, index) {
                     final pokemon = capturedPokemons[index];
-                    return Card(
-                      margin: const EdgeInsets.symmetric(
-                          vertical: 8, horizontal: 16),
-                      child: ListTile(
-                        leading: Image.network(
-                          pokemon['imageUrl'],
-                          width: 50,
-                          height: 50,
-                          fit: BoxFit.cover,
+                    return GestureDetector(
+                      onTap: () {
+                        
+                      },
+                      child: Card(
+                        margin: const EdgeInsets.symmetric(
+                            vertical: 8, horizontal: 16),
+                        child: ListTile(
+                          leading: Image.network(
+                            pokemon['imageUrl'],
+                            width: 50,
+                            height: 50,
+                            fit: BoxFit.cover,
+                          ),
+                          title: Text(pokemon['name']),
+                          subtitle: Text(pokemon['description']),
                         ),
-                        title: Text(pokemon['name']),
-                        subtitle: Text(pokemon['description']),
                       ),
                     );
                   },

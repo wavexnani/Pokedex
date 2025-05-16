@@ -1,8 +1,10 @@
+// ignore_for_file: avoid_print
+
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 Future<void> capturePokemon({
-  required int userId,
+  required String username,
   required String name,
   required String imageUrl,
   required String description,
@@ -10,19 +12,20 @@ Future<void> capturePokemon({
   required List<String> abilities,
   required Map<String, dynamic> stats,
 }) async {
-  final url = Uri.parse("http://<YOUR_BACKEND_URL>/captured");
+  final url = Uri.parse(
+      "https://c67a-2409-40f3-2049-b65f-a512-cdfd-d2dd-6f03.ngrok-free.app/captured/add");
 
   final response = await http.post(
     url,
     headers: {'Content-Type': 'application/json'},
     body: json.encode({
-      "user_id": userId,
+      "username": username,
       "name": name,
-      "image_url": imageUrl,
+      "imageUrl": imageUrl,
       "description": description,
-      "types": types,
-      "abilities": abilities,
-      "stats": stats,
+      "types": types.join(','),
+      "abilities": abilities.join(','),
+      "stats": json.encode(stats),
     }),
   );
 

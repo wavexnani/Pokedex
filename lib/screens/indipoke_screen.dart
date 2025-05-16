@@ -1,6 +1,10 @@
-import 'package:flutter/material.dart';
+// ignore_for_file: deprecated_member_use
 
-class PokemonDetailPage extends StatelessWidget {
+import 'package:flutter/material.dart';
+import 'package:project_x/utils/capfun.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+class PokemonDetailPage extends StatefulWidget {
   final String name;
   final String imageUrl;
   final String description;
@@ -17,6 +21,26 @@ class PokemonDetailPage extends StatelessWidget {
     required this.types,
     required this.abilities,
   });
+
+  @override
+  State<PokemonDetailPage> createState() => _PokemonDetailPageState();
+}
+
+class _PokemonDetailPageState extends State<PokemonDetailPage> {
+  String? username;
+
+  @override
+  void initState() {
+    super.initState();
+    loadUsername();
+  }
+
+  Future<void> loadUsername() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      username = prefs.getString('username');
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -82,13 +106,13 @@ class PokemonDetailPage extends StatelessWidget {
                       child: Column(
                         children: [
                           Image.network(
-                            imageUrl,
+                            widget.imageUrl,
                             height: 280,
                             fit: BoxFit.contain,
                           ),
                           const SizedBox(height: 12),
                           Text(
-                            name,
+                            widget.name,
                             style: const TextStyle(
                               color: Colors.amberAccent,
                               fontSize: 28,
@@ -110,7 +134,7 @@ class PokemonDetailPage extends StatelessWidget {
                       border: Border.all(color: Colors.white10),
                     ),
                     child: Text(
-                      description,
+                      widget.description,
                       style: const TextStyle(
                         fontSize: 16,
                         color: Colors.white70,
@@ -122,13 +146,14 @@ class PokemonDetailPage extends StatelessWidget {
                   const SizedBox(height: 20),
 
                   // Types with white background
-                  _buildChipsRow("Types", types, Colors.white, Colors.blueGrey),
+                  _buildChipsRow(
+                      "Types", widget.types, Colors.white, Colors.blueGrey),
 
                   const SizedBox(height: 10),
 
                   // Abilities with light blue
-                  _buildChipsRow("Abilities", abilities, Colors.lightBlueAccent,
-                      Colors.blueGrey),
+                  _buildChipsRow("Abilities", widget.abilities,
+                      Colors.lightBlueAccent, Colors.blueGrey),
 
                   const SizedBox(height: 20),
 
@@ -147,9 +172,9 @@ class PokemonDetailPage extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 10),
-                        ...stats.entries.map(
+                        ...widget.stats.entries.map(
                           (entry) => Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 6.0),
+                            padding: const EdgeInsets.only(left: 6.0),
                             child: Row(
                               children: [
                                 SizedBox(
@@ -189,6 +214,8 @@ class PokemonDetailPage extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 40),
+
+                  ElevatedButton(onPressed: (){}, child: Text("error"))
                 ],
               ),
             ),
@@ -201,7 +228,14 @@ class PokemonDetailPage extends StatelessWidget {
             right: 24,
             child: ElevatedButton(
               onPressed: () {
-                // Handle capture logic here
+                capturePokemon(
+                    username: username!,
+                    name: widget.name,
+                    imageUrl: widget.imageUrl,
+                    description: widget.description,
+                    types: widget.types,
+                    abilities: widget.abilities,
+                    stats: widget.stats);
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Pokémon captured!')),
                 );
@@ -236,31 +270,36 @@ class PokemonDetailPage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: TextStyle(
-              color: chipColor == Colors.white ? Colors.amberAccent : chipColor,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+          Center(
+            child: Text(
+              title,
+              style: TextStyle(
+                color:
+                    chipColor == Colors.white ? Colors.amberAccent : chipColor,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
           const SizedBox(height: 8),
-          Wrap(
-            spacing: 10,
-            children: items
-                .map(
-                  (item) => Chip(
-                    label: Text(
-                      item,
-                      style: TextStyle(color: textColor),
+          Center(
+            child: Wrap(
+              spacing: 10,
+              children: items
+                  .map(
+                    (item) => Chip(
+                      label: Text(
+                        item,
+                        style: TextStyle(color: textColor),
+                      ),
+                      backgroundColor: chipColor.withOpacity(0.3),
+                      shape: StadiumBorder(
+                        side: BorderSide(color: chipColor),
+                      ),
                     ),
-                    backgroundColor: chipColor.withOpacity(0.3),
-                    shape: StadiumBorder(
-                      side: BorderSide(color: chipColor),
-                    ),
-                  ),
-                )
-                .toList(),
+                  )
+                  .toList(),
+            ),
           ),
         ],
       ),
