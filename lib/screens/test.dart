@@ -5,6 +5,7 @@ import 'package:project_x/screens/indipoke_screen.dart';
 import 'package:project_x/screens/login_screen.dart';
 import 'package:project_x/screens/mycaptures.dart';
 import 'package:project_x/screens/search_screen.dart';
+import 'package:project_x/screens/trading_screen.dart';
 import 'package:project_x/utils/scrollable.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -17,12 +18,21 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   late Future<List<Map<String, dynamic>>> futurePokemonList;
   String? username;
+  List<Map<String, dynamic>>? loadedPokemons;
 
   @override
   void initState() {
     super.initState();
-    futurePokemonList = fetchPokemonDetails();
     loadUsername();
+
+    final fetchedFuture = fetchPokemonDetails();
+    futurePokemonList = fetchedFuture;
+
+    fetchedFuture.then((pokemonList) {
+      setState(() {
+        loadedPokemons = pokemonList;
+      });
+    });
   }
 
   Future<void> logout() async {
@@ -151,11 +161,30 @@ class _HomePageState extends State<HomePage> {
               ),
               label: 'My Captures'),
           BottomNavigationBarItem(
-              icon: Icon(
+            icon: GestureDetector(
+              onTap: () {
+                if (username != null && loadedPokemons != null) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => TradingPage(
+                        currentUsername: username!,
+                        myCapturedPokemons: loadedPokemons!,
+                      ),
+                    ),
+                  );
+                } else {
+                  // You can show a message or handle the loading state
+                  print('Data not loaded yet');
+                }
+              },
+              child: Icon(
                 Icons.currency_exchange,
                 color: Colors.white,
               ),
-              label: 'Setting'),
+            ),
+            label: 'Trading',
+          ),
         ],
       ), // Dark background for a futuristic look
       appBar: AppBar(
