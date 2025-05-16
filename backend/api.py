@@ -1,155 +1,155 @@
 from flask import Flask, jsonify, request
-import requests
-from flask_cors import CORS
+from flask_restful import Api, Resource, reqparse
 from flask_sqlalchemy import SQLAlchemy
-from flask_restful import Resource, Api, reqparse, fields, marshal_with, abort
+import requests
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
-db = SQLAlchemy(app)
-CORS(app)
 api = Api(app)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///pokemon.db'
+db = SQLAlchemy(app)
 
-
-class UserModel (db.Model):
-    id = db.Column(db.Integer, primary_key = True)
-    name = db.Column(db.String(80), unique = True, nullable = False)
-    email = db.Column(db.String(80), unique = True, nullable = False)
-
-    def __repr__ (self):
-        return f"User(name = {self.name}, email = {self.email})"
-    
-class FavoriteModel(db.Model):
+# ------------------ MODELS ------------------
+class UserModel(db.Model):
+    __tablename__ = 'user_model'
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user_model.id'), nullable=False)
-
+    username = db.Column(db.String(80), unique=True, nullable=False)
     name = db.Column(db.String(80), nullable=False)
-    image_url = db.Column(db.String(300), nullable=False)
-    description = db.Column(db.Text, nullable=False)
-
-    types = db.Column(db.PickleType, nullable=False)        # ['Fire', 'Flying']
-    abilities = db.Column(db.PickleType, nullable=False)    # ['Blaze', 'Solar Power']
-    stats = db.Column(db.PickleType, nullable=False)        # {'HP': 78, 'Attack': 84, ...}
-
-    user = db.relationship('UserModel', backref='favorites')
-
+    password = db.Column(db.String(128), nullable=False)
 
 class CapturedModel(db.Model):
+    __tablename__ = 'captured'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user_model.id'), nullable=False)
-
     name = db.Column(db.String(80), nullable=False)
-    image_url = db.Column(db.String(300), nullable=False)
-    description = db.Column(db.Text, nullable=False)
+    imageUrl = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.String(500), nullable=False)
+    stats = db.Column(db.String(200), nullable=False)
+    types = db.Column(db.String(100), nullable=False)
+    abilities = db.Column(db.String(200), nullable=False)
 
-    types = db.Column(db.PickleType, nullable=False)
-    abilities = db.Column(db.PickleType, nullable=False)
-    stats = db.Column(db.PickleType, nullable=False)
+class FavoriteModel(db.Model):
+    __tablename__ = 'favorite'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user_model.id'), nullable=False)
+    name = db.Column(db.String(80), nullable=False)
+    imageUrl = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.String(500), nullable=False)
+    stats = db.Column(db.String(200), nullable=False)
+    types = db.Column(db.String(100), nullable=False)
+    abilities = db.Column(db.String(200), nullable=False)
 
-    user = db.relationship('UserModel', backref='captured')
+# ------------------ PARSERS ------------------
+signup_args = reqparse.RequestParser()
+signup_args.add_argument('username', type=str, required=True)
+signup_args.add_argument('name', type=str, required=True)
+signup_args.add_argument('password', type=str, required=True)
 
+login_args = reqparse.RequestParser()
+login_args.add_argument('username', type=str, required=True)
+login_args.add_argument('password', type=str, required=True)
 
-user_args = reqparse.RequestParser()
-user_args.add_argument('name', type=str, required=True, help = "Name cannot be empty")
-user_args.add_argument('email', type=str, required=True, help = "email cannot be empty")
+pokemon_args = reqparse.RequestParser()
+pokemon_args.add_argument('user_id', type=int, required=True)
+pokemon_args.add_argument('name', type=str, required=True)
+pokemon_args.add_argument('imageUrl', type=str, required=True)
+pokemon_args.add_argument('description', type=str, required=True)
+pokemon_args.add_argument('stats', type=str, required=True)
+pokemon_args.add_argument('types', type=str, required=True)
+pokemon_args.add_argument('abilities', type=str, required=True)
 
-# For Favorite Pokémon
-favorite_args = reqparse.RequestParser()
-favorite_args.add_argument('user_id', type=int, required=True)
-favorite_args.add_argument('name', type=str, required=True)
-favorite_args.add_argument('image_url', type=str, required=True)
-favorite_args.add_argument('description', type=str, required=True)
-favorite_args.add_argument('types', type=list, location='json', required=True)
-favorite_args.add_argument('abilities', type=list, location='json', required=True)
-favorite_args.add_argument('stats', type=dict, location='json', required=True)
-
-# For Captured Pokémon
-captured_args = reqparse.RequestParser()
-captured_args.add_argument('user_id', type=int, required=True)
-captured_args.add_argument('name', type=str, required=True)
-captured_args.add_argument('image_url', type=str, required=True)
-captured_args.add_argument('description', type=str, required=True)
-captured_args.add_argument('types', type=list, location='json', required=True)
-captured_args.add_argument('abilities', type=list, location='json', required=True)
-captured_args.add_argument('stats', type=dict, location='json', required=True)
-
-
-
-userFields = {
-    'id' : fields.Integer,
-    'name' : fields.String,
-    'email' : fields.String,  
-}
-
-
-favoriteFields = {
-    'id': fields.Integer,
-    'user_id': fields.Integer,
-    'name': fields.String,
-    'image_url': fields.String,
-    'description': fields.String,
-    'types': fields.List(fields.String),
-    'abilities': fields.List(fields.String),
-    'stats': fields.Raw  # because it's a dictionary
-}
-
-capturedFields = {
-    'id': fields.Integer,
-    'user_id': fields.Integer,
-    'name': fields.String,
-    'image_url': fields.String,
-    'description': fields.String,
-    'types': fields.List(fields.String),
-    'abilities': fields.List(fields.String),
-    'stats': fields.Raw
-}
-
-class Favorites(Resource):
-    @marshal_with(favoriteFields)
-    def get(self):
-        return FavoriteModel.query.all()
-
-    @marshal_with(favoriteFields)
+# ------------------ RESOURCES ------------------
+class Signup(Resource):
     def post(self):
-        args = favorite_args.parse_args()
-        favorite = FavoriteModel(**args)
-        db.session.add(favorite)
+        args = signup_args.parse_args()
+        if UserModel.query.filter_by(username=args['username']).first():
+            return {"message": "Username already exists"}, 409
+
+        user = UserModel(**args)
+        db.session.add(user)
         db.session.commit()
-        return favorite, 201
+        return {"message": "User created successfully", "user_id": user.id}, 201
 
-class Captured(Resource):
-    @marshal_with(capturedFields)
-    def get(self):
-        return CapturedModel.query.all(), 200
-
-    @marshal_with(capturedFields)
+class Login(Resource):
     def post(self):
-        args = captured_args.parse_args()
+        args = login_args.parse_args()
+        user = UserModel.query.filter_by(username=args['username']).first()
+        if user and user.password == args['password']:
+            return {"message": "Login successful", "user_id": user.id}, 200
+        return {"message": "Invalid credentials"}, 401
+
+class AddToCaptured(Resource):
+    def post(self):
+        args = pokemon_args.parse_args()
         captured = CapturedModel(**args)
         db.session.add(captured)
         db.session.commit()
-        return captured, 201
+        return {"message": "Pokémon captured successfully"}, 201
 
+class GetCaptured(Resource):
+    def get(self, user_id):
+        pokemons = CapturedModel.query.filter_by(user_id=user_id).all()
+        results = [{
+            "id": p.id,
+            "name": p.name,
+            "imageUrl": p.imageUrl,
+            "description": p.description,
+            "stats": p.stats,
+            "types": p.types,
+            "abilities": p.abilities
+        } for p in pokemons]
+        return results, 200
 
-class Users(Resource):
-    @marshal_with(userFields)
-    def get(self):
-        users = UserModel.query.all()
-        return users
-    
-    @marshal_with(userFields)
-    def post(self):
-        args = user_args.parse_args()
-        user = UserModel(name=args["name"], email=args["email"])
-        db.session.add(user)
+class DeleteCaptured(Resource):
+    def delete(self, capture_id):
+        capture = CapturedModel.query.get(capture_id)
+        if not capture:
+            return {"message": "Not found"}, 404
+        db.session.delete(capture)
         db.session.commit()
-        users = UserModel.query.all()
-        return users, 201
-    
+        return {"message": "Deleted successfully"}, 200
 
-api.add_resource(Users,'/users')
-api.add_resource(Favorites, '/favorites')
-api.add_resource(Captured, '/captured')
+class AddToFavorite(Resource):
+    def post(self):
+        args = pokemon_args.parse_args()
+        favorite = FavoriteModel(**args)
+        db.session.add(favorite)
+        db.session.commit()
+        return {"message": "Added to favorites successfully"}, 201
+
+class GetFavorites(Resource):
+    def get(self, user_id):
+        pokemons = FavoriteModel.query.filter_by(user_id=user_id).all()
+        results = [{
+            "id": p.id,
+            "name": p.name,
+            "imageUrl": p.imageUrl,
+            "description": p.description,
+            "stats": p.stats,
+            "types": p.types,
+            "abilities": p.abilities
+        } for p in pokemons]
+        return results, 200
+
+class DeleteFavorite(Resource):
+    def delete(self, favorite_id):
+        favorite = FavoriteModel.query.get(favorite_id)
+        if not favorite:
+            return {"message": "Not found"}, 404
+        db.session.delete(favorite)
+        db.session.commit()
+        return {"message": "Deleted successfully"}, 200
+
+# ------------------ ROUTES ------------------
+api.add_resource(Signup, '/signup')
+api.add_resource(Login, '/login')
+
+api.add_resource(AddToCaptured, '/captured/add')
+api.add_resource(GetCaptured, '/captured/<int:user_id>')
+api.add_resource(DeleteCaptured, '/captured/delete/<int:capture_id>')
+
+api.add_resource(AddToFavorite, '/favorites/add')
+api.add_resource(GetFavorites, '/favorites/<int:user_id>')
+api.add_resource(DeleteFavorite, '/favorites/delete/<int:favorite_id>')
 
 
 @app.route('/api', methods=['GET'])
@@ -193,5 +193,9 @@ def get_pokemon_data():
 
     return jsonify(pokemon_entry)
 
+
+
+
+# ------------------ MAIN ------------------
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080, debug=True)
