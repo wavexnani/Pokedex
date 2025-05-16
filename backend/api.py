@@ -202,7 +202,28 @@ def get_pokemon_data():
 
     return jsonify(pokemon_entry)
 
-# ------------------ MAIN ------------------
+
+
+@app.route('/captured/<string:username>', methods=['GET'])
+def get_captured_pokemons_by_username(username):
+    user = UserModel.query.filter_by(username=username).first()
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    captured = CapturedModel.query.filter_by(user_id=user.id).all()
+    results = [{
+        "id": p.id,
+        "name": p.name,
+        "imageUrl": p.imageUrl,
+        "description": p.description,
+        "stats": p.stats,
+        "types": p.types,
+        "abilities": p.abilities
+    } for p in captured]
+
+    return jsonify(results), 200
+
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080, debug=True)

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:project_x/screens/indipoke_screen.dart';
 import 'package:project_x/screens/login_screen.dart';
+import 'package:project_x/screens/mycaptures.dart';
 import 'package:project_x/screens/search_screen.dart';
 import 'package:project_x/utils/scrollable.dart';
 import 'package:http/http.dart' as http;
@@ -121,7 +122,12 @@ class _HomePageState extends State<HomePage> {
         items: [
           BottomNavigationBarItem(
               icon: GestureDetector(
-                onTap: () => {},
+                onTap: () => {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => HomePage()),
+                  )
+                },
                 child: Icon(
                   Icons.home,
                   color: Colors.white,
@@ -129,9 +135,19 @@ class _HomePageState extends State<HomePage> {
               ),
               label: 'Home'),
           BottomNavigationBarItem(
-              icon: Icon(
-                Icons.catching_pokemon,
-                color: Colors.white,
+              icon: GestureDetector(
+                onTap: () => {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => MyCapturesPage(username: username!),
+                    ),
+                  )
+                },
+                child: Icon(
+                  Icons.catching_pokemon,
+                  color: Colors.white,
+                ),
               ),
               label: 'My Captures'),
           BottomNavigationBarItem(
