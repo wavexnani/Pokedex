@@ -15,10 +15,13 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   late Future<List<Map<String, dynamic>>> futurePokemonList;
+  String? username;
+
   @override
   void initState() {
     super.initState();
     futurePokemonList = fetchPokemonDetails();
+    loadUsername();
   }
 
   Future<void> logout() async {
@@ -27,6 +30,13 @@ class _HomePageState extends State<HomePage> {
     Navigator.of(context).push(
       MaterialPageRoute(builder: (context) => LoginScreen()),
     );
+  }
+
+  Future<void> loadUsername() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      username = prefs.getString('username');
+    });
   }
 
   Future<List<Map<String, dynamic>>> fetchPokemonDetails() async {
@@ -134,14 +144,28 @@ class _HomePageState extends State<HomePage> {
       ), // Dark background for a futuristic look
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: Text(
-          'Pokédex',
-          style: TextStyle(
-            fontSize: 32,
-            fontWeight: FontWeight.bold,
-            color: Colors.amberAccent, // Amber for a futuristic pop
+        leading: GestureDetector(
+          onTap: () {},
+          child: Padding(
+            padding: const EdgeInsets.only(left: 15.0),
+            child: CircleAvatar(
+              backgroundImage: AssetImage('images/profile_man.png'),
+            ),
           ),
         ),
+        title: username == null
+            ? Text("Loading...")
+            : Row(
+                children: [
+                  SizedBox(width: 8),
+                  Text(
+                    username!,
+                    style: TextStyle(
+                      color: Colors.amberAccent,
+                    ),
+                  ),
+                ],
+              ),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,

@@ -100,7 +100,7 @@ class LoginScreen extends StatelessWidget {
                     onPressed: () async {
                       final response = await http.post(
                         Uri.parse(
-                            'https://c67a-2409-40f3-2049-b65f-a512-cdfd-d2dd-6f03.ngrok-free.app/login'), // Change IP if using a real device
+                            'https://c67a-2409-40f3-2049-b65f-a512-cdfd-d2dd-6f03.ngrok-free.app/login'),
                         headers: {"Content-Type": "application/json"},
                         body: jsonEncode({
                           "username": _emailController.text,
@@ -113,6 +113,9 @@ class LoginScreen extends StatelessWidget {
                         final userId = data['user_id'];
                         print("Login successful! User ID: $userId");
 
+                        // ✅ Save username to SharedPreferences
+                        await saveLoginStatus(_emailController.text);
+
                         Navigator.of(context).push(
                           MaterialPageRoute(builder: (context) => HomePage()),
                         );
@@ -120,7 +123,6 @@ class LoginScreen extends StatelessWidget {
                         final error = jsonDecode(response.body)['message'];
                         print("Login failed: $error");
 
-                        // Show error message (optional)
                         showDialog(
                           context: context,
                           builder: (context) => AlertDialog(
