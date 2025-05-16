@@ -256,6 +256,62 @@ def get_captured_pokemons_by_username(username):
 
     return jsonify(results), 200
 
+@app.route('/trade', methods=['POST'])
+def trade_pokemon():
+    data = request.get_json()
+
+    from_username = data.get('from_username')
+    to_username = data.get('to_username')
+    name = data.get('name')
+    image_url = data.get('imageUrl')
+    description = data.get('description')
+    types = data.get('types')
+    abilities = data.get('abilities')
+    stats = data.get('stats')
+
+    if not from_username or not to_username or not name or not image_url or not stats:
+        return jsonify({'error': 'Missing required fields'}), 400
+
+    if from_username == to_username:
+        return jsonify({'error': 'Cannot trade to yourself'}), 400
+
+    sender = UserModel.query.filter_by(username=from_username).first()
+    receiver = UserModel.query.filter_by(username=to_username).first()
+
+    if not sender:
+        return jsonify({'error': 'Sender not found'}), 404
+    if not receiver:
+        return jsonify({'error': 'Receiver not found'}), 404
+
+    # Create new Pokémon under receiver
+    traded_pokemon = CapturedModel(
+        user_id=receiver.id,
+        name=name,
+        imageUrl=image_url,
+        description=description,
+        stats=stats,
+        types=types,
+        abilities=abilities
+    )
+
+    db.session.add(traded_pokemon)
+    db.session.commit()
+
+    return jsonify({
+        'message': f'{name} successfully traded from {from_username} to {to_username}'
+    }), 200
+
+@app.route('/users/by-username/<string:username>', methods=['GET'])
+def get_user_by_username(username):
+    user = UserModel.query.filter_by(username=username).first()
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    return jsonify({
+        'id': user.id,
+        'username': user.username,
+        'name': user.name
+    }), 200
 
 
 if __name__ == '__main__':
