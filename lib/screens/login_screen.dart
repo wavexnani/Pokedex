@@ -1,5 +1,5 @@
 // ignore_for_file: avoid_print, use_build_context_synchronously
-
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
@@ -11,6 +11,12 @@ class LoginScreen extends StatelessWidget {
 
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+
+  Future<void> saveLoginStatus(String username) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isLoggedIn', true);
+    await prefs.setString('username', username); // optional
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -98,11 +98,14 @@ class _HomePageState extends State<HomePage> {
         unselectedItemColor: Colors.white,
         selectedItemColor: Colors.amberAccent,
         backgroundColor: Colors.blueGrey[900],
-        items: const [
+        items: [
           BottomNavigationBarItem(
-              icon: Icon(
-                Icons.home,
-                color: Colors.white,
+              icon: GestureDetector(
+                onTap: () => {},
+                child: Icon(
+                  Icons.home,
+                  color: Colors.white,
+                ),
               ),
               label: 'Home'),
           BottomNavigationBarItem(
