@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:project_x/screens/test.dart';
+import 'package:project_x/screens/register_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -13,7 +13,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: HomePage(),
+      home: RegisterScreen(),
     );
   }
 }
