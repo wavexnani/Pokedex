@@ -22,7 +22,7 @@ class RegisterScreen extends StatelessWidget {
     }
 
     final url = Uri.parse(
-        'https://c67a-2409-40f3-2049-b65f-a512-cdfd-d2dd-6f03.ngrok-free.app/signup');
+        'http://a3a7-2409-40f3-2049-b65f-d9bf-6538-9066-d955.ngrok-free.app/signup');
 
     try {
       final response = await http.post(

@@ -1,7 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
-import 'package:project_x/utils/capfun.dart';
+import 'package:project_x/utils/capaddfun.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PokemonDetailPage extends StatefulWidget {

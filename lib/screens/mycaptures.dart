@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:project_x/utils/usercapfun.dart';
 
 class MyCapturesPage extends StatefulWidget {
   final String username;
@@ -12,36 +11,24 @@ class MyCapturesPage extends StatefulWidget {
 }
 
 class _MyCapturesPageState extends State<MyCapturesPage> {
-  List<dynamic> capturedPokemons = [];
+  List<Map<String, dynamic>> capturedPokemons = [];
   bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    fetchCapturedPokemons();
+    _loadCapturedPokemons();
   }
 
-  Future<void> fetchCapturedPokemons() async {
-    final url = Uri.parse(
-        "https://c67a-2409-40f3-2049-b65f-a512-cdfd-d2dd-6f03.ngrok-free.app/captured/${widget.username}");
-
+  Future<void> _loadCapturedPokemons() async {
     try {
-      final response = await http.get(url);
-
-      if (response.statusCode == 200) {
-        setState(() {
-          capturedPokemons = json.decode(response.body);
-          isLoading = false;
-        });
-      } else {
-        setState(() {
-          isLoading = false;
-        });
-        print(
-            "Failed to load captured Pokémon. Status: ${response.statusCode}");
-      }
+      final data = await PokemonService.fetchCapturedPokemons(widget.username);
+      setState(() {
+        capturedPokemons = data;
+        isLoading = false;
+      });
     } catch (e) {
-      print("Error fetching captured Pokémon: $e");
+      print("Error: $e");
       setState(() {
         isLoading = false;
       });
@@ -53,44 +40,84 @@ class _MyCapturesPageState extends State<MyCapturesPage> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         title: const Text(
-          'My Captured Pokémons',
-          style: TextStyle(color: Colors.amber),
+          'My Captured Pokémon',
+          style: TextStyle(color: Colors.amberAccent),
         ),
-        backgroundColor: Colors.blueGrey[800],
+        centerTitle: true,
       ),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+              child: CircularProgressIndicator(color: Colors.amberAccent))
           : capturedPokemons.isEmpty
               ? const Center(
                   child: Text(
-                  "You haven't captured any Pokémon yet.",
-                  style: TextStyle(color: Colors.amber),
-                ))
-              : ListView.builder(
-                  itemCount: capturedPokemons.length,
-                  itemBuilder: (context, index) {
-                    final pokemon = capturedPokemons[index];
-                    return GestureDetector(
-                      onTap: () {
-                        
-                      },
-                      child: Card(
-                        margin: const EdgeInsets.symmetric(
-                            vertical: 8, horizontal: 16),
-                        child: ListTile(
-                          leading: Image.network(
-                            pokemon['imageUrl'],
-                            width: 50,
-                            height: 50,
-                            fit: BoxFit.cover,
-                          ),
-                          title: Text(pokemon['name']),
-                          subtitle: Text(pokemon['description']),
+                    "You haven't captured any Pokémon yet.",
+                    style: TextStyle(color: Colors.white70, fontSize: 16),
+                  ),
+                )
+              : Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: GridView.builder(
+                    itemCount: capturedPokemons.length,
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 12,
+                      childAspectRatio: 0.75,
+                    ),
+                    itemBuilder: (context, index) {
+                      final pokemon = capturedPokemons[index];
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: Colors.blueGrey[900],
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: const [
+                            BoxShadow(color: Colors.black45, blurRadius: 8),
+                          ],
                         ),
-                      ),
-                    );
-                  },
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(15),
+                              child: Image.network(
+                                pokemon['imageUrl'],
+                                height: 100,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              pokemon['name'],
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 8.0),
+                              child: Text(
+                                pokemon['description'],
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
                 ),
     );
   }

@@ -1,100 +1,77 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:project_x/screens/tradconform.dart';
+import 'package:project_x/utils/usercapfun.dart';
+import 'package:project_x/utils/userservice.dart'; // Assuming UserService is here
 
 class TradingPage extends StatefulWidget {
-  final String currentUsername;
-  final List<Map<String, dynamic>> myCapturedPokemons;
+  final String username;
 
-  const TradingPage({
-    required this.currentUsername,
-    required this.myCapturedPokemons,
-  });
+  const TradingPage({super.key, required this.username});
 
   @override
   State<TradingPage> createState() => _TradingPageState();
 }
 
 class _TradingPageState extends State<TradingPage> {
-  static const String backendUrl =
-      'https://c67a-2409-40f3-2049-b65f-a512-cdfd-d2dd-6f03.ngrok-free.app/trade'; // <-- Replace this
-
-  String searchUsername = '';
-  Map<String, dynamic>? selectedUser;
+  List<Map<String, dynamic>> capturedPokemons = [];
   int? selectedPokemonId;
+  bool isLoading = true;
+  final TextEditingController _searchController = TextEditingController();
 
-  Future<void> fetchUser(String username) async {
-    final response = await http.get(Uri.parse(
-        'https://c67a-2409-40f3-2049-b65f-a512-cdfd-d2dd-6f03.ngrok-free.app/users/by-username/$username'));
+  @override
+  void initState() {
+    super.initState();
+    _loadCapturedPokemons();
+  }
 
-    if (response.statusCode == 200) {
+  Future<void> _loadCapturedPokemons() async {
+    try {
+      final data = await PokemonService.fetchCapturedPokemons(widget.username);
       setState(() {
-        selectedUser = jsonDecode(response.body);
+        capturedPokemons = data;
+        isLoading = false;
       });
-    } else {
+    } catch (e) {
+      print("Error fetching captured Pokémon: $e");
       setState(() {
-        selectedUser = null;
+        isLoading = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("User not found")),
-      );
     }
   }
 
-  void selectPokemon(int pokemonId) {
+  void toggleSelection(int id) {
     setState(() {
-      selectedPokemonId = (selectedPokemonId == pokemonId) ? null : pokemonId;
+      selectedPokemonId = (selectedPokemonId == id) ? null : id;
+      if (selectedPokemonId == null) {
+        _searchController.clear();
+      }
     });
   }
 
-  Future<void> performTrade() async {
-    if (selectedUser == null || selectedPokemonId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Select a user and Pokémon before trading")),
+  Future<void> _handleSearch(String searchUsername) async {
+    final user = await UserService.getUserByUsername(searchUsername);
+
+    if (user != null) {
+      // Navigate to trade confirmation page
+      final selectedPokemon =
+          capturedPokemons.firstWhere((p) => p['id'] == selectedPokemonId);
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => TradeConfirmPage(
+            toUsername: user['username'],
+            fromUsername: widget.username,
+            selectedPokemon: selectedPokemon,
+          ),
+        ),
       );
-      return;
-    }
-
-    final selectedPokemon = widget.myCapturedPokemons.firstWhere(
-      (p) => p['id'] == selectedPokemonId,
-      orElse: () => {},
-    );
-
-    if (selectedPokemon.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Pokémon not found in your list")),
-      );
-      return;
-    }
-
-    final response = await http.post(
-      Uri.parse(backendUrl), // direct POST to /trade
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'sender_username': widget.currentUsername,
-        'receiver_username': selectedUser!['username'],
-        'name': selectedPokemon['name'],
-        'imageUrl': selectedPokemon['imageUrl'],
-        'description': selectedPokemon['description'],
-        'types': selectedPokemon['types'],
-        'abilities': selectedPokemon['abilities'],
-        'stats': selectedPokemon['stats'],
-      }),
-    );
-
-    if (response.statusCode == 201) {
-      final message = jsonDecode(response.body)['message'];
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('✅ Trade successful: $message')),
-      );
-      setState(() {
-        selectedUser = null;
-        selectedPokemonId = null;
-      });
     } else {
-      final error = jsonDecode(response.body)['error'];
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('❌ Trade failed: $error')),
+        const SnackBar(
+          content: Text("User not found"),
+          backgroundColor: Colors.redAccent,
+        ),
       );
     }
   }
@@ -106,122 +83,134 @@ class _TradingPageState extends State<TradingPage> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title:
-            Text('Trading Center', style: TextStyle(color: Colors.amberAccent)),
+        title: const Text(
+          'Select a Pokémon to Trade',
+          style: TextStyle(color: Colors.amberAccent),
+        ),
         centerTitle: true,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            // Username search
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    onChanged: (val) => searchUsername = val,
-                    style: TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      hintText: 'Enter username',
-                      hintStyle: TextStyle(color: Colors.white70),
-                      filled: true,
-                      fillColor: Colors.blueGrey[800],
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(20)),
-                    ),
+      body: isLoading
+          ? const Center(
+              child: CircularProgressIndicator(color: Colors.amberAccent),
+            )
+          : capturedPokemons.isEmpty
+              ? const Center(
+                  child: Text(
+                    "You haven't captured any Pokémon!",
+                    style: TextStyle(color: Colors.white70, fontSize: 16),
                   ),
-                ),
-                IconButton(
-                  icon: Icon(Icons.search, color: Colors.amberAccent),
-                  onPressed: () => fetchUser(searchUsername),
-                ),
-              ],
-            ),
-            SizedBox(height: 20),
-
-            if (selectedUser != null)
-              Card(
-                color: Colors.blueGrey[900],
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20)),
-                child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundImage:
-                        NetworkImage(selectedUser!['photoUrl'] ?? ''),
-                  ),
-                  title: Text(
-                    selectedUser!['name'] ?? 'Unknown',
-                    style: TextStyle(
-                        color: Colors.amberAccent, fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Text("Username: ${selectedUser!['username']}",
-                      style: TextStyle(color: Colors.white70)),
-                ),
-              ),
-
-            SizedBox(height: 20),
-            Text('Select one Pokémon to trade',
-                style: TextStyle(color: Colors.white, fontSize: 18)),
-            SizedBox(height: 10),
-
-            Expanded(
-              child: GridView.builder(
-                itemCount: widget.myCapturedPokemons.length,
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    childAspectRatio: 0.75,
-                    crossAxisSpacing: 10,
-                    mainAxisSpacing: 10),
-                itemBuilder: (context, index) {
-                  final pokemon = widget.myCapturedPokemons[index];
-                  final id = pokemon['id'];
-                  final isSelected = selectedPokemonId == id;
-
-                  return GestureDetector(
-                    onTap: () => selectPokemon(id),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? Colors.amber[800]
-                            : Colors.blueGrey[900],
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(color: Colors.black38, blurRadius: 10)
-                        ],
+                )
+              : Column(
+                  children: [
+                    if (selectedPokemonId != null)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.grey[900],
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.amberAccent),
+                          ),
+                          child: TextField(
+                            controller: _searchController,
+                            style: const TextStyle(color: Colors.white),
+                            decoration: const InputDecoration(
+                              hintText: 'Enter username to trade with',
+                              hintStyle: TextStyle(color: Colors.white70),
+                              prefixIcon:
+                                  Icon(Icons.search, color: Colors.amberAccent),
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.all(14),
+                            ),
+                            onSubmitted: _handleSearch,
+                          ),
+                        ),
                       ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Image.network(pokemon['imageUrl'], height: 100),
-                          SizedBox(height: 10),
-                          Text(pokemon['name'],
-                              style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold)),
-                        ],
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: GridView.builder(
+                          itemCount: capturedPokemons.length,
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            childAspectRatio: 0.78,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                          ),
+                          itemBuilder: (context, index) {
+                            final pokemon = capturedPokemons[index];
+                            final id = pokemon['id'];
+                            final isSelected = selectedPokemonId == id;
+
+                            return GestureDetector(
+                              onTap: () => toggleSelection(id),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 300),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? const Color.fromARGB(255, 97, 175, 179)
+                                          .withOpacity(0.85)
+                                      : Colors.blueGrey[900],
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? Colors.amberAccent
+                                        : Colors.transparent,
+                                    width: 3,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.4),
+                                      blurRadius: 8,
+                                      offset: const Offset(2, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Image.network(
+                                        pokemon['imageUrl'],
+                                        height: 100,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Text(
+                                      pokemon['name'],
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8.0),
+                                      child: Text(
+                                        pokemon['description'] ?? '',
+                                        style: const TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 12,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
                       ),
                     ),
-                  );
-                },
-              ),
-            ),
-
-            ElevatedButton.icon(
-              onPressed: (selectedUser != null && selectedPokemonId != null)
-                  ? performTrade
-                  : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.amberAccent,
-                padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(25)),
-              ),
-              icon: Icon(Icons.send),
-              label: Text("Send Pokémon"),
-            ),
-          ],
-        ),
-      ),
+                  ],
+                ),
     );
   }
 }

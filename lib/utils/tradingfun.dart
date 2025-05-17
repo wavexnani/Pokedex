@@ -11,7 +11,8 @@ Future<void> tradePokemon({
   required List<String> abilities,
   required Map<String, dynamic> stats,
 }) async {
-  final url = Uri.parse("https://your-server.ngrok-free.app/trade");
+  final url = Uri.parse(
+      "http://a3a7-2409-40f3-2049-b65f-d9bf-6538-9066-d955.ngrok-free.app/trade");
 
   final response = await http.post(
     url,

@@ -64,6 +64,9 @@ pokemon_args.add_argument('stats', type=str, required=True)
 pokemon_args.add_argument('types', type=str, required=True)
 pokemon_args.add_argument('abilities', type=str, required=True)
 
+update_name_args = reqparse.RequestParser()
+update_name_args.add_argument('new_name', type=str, required=True)
+
 # ------------------ RESOURCES ------------------
 
 class Signup(Resource):
@@ -116,6 +119,23 @@ class DeleteCaptured(Resource):
         db.session.delete(capture)
         db.session.commit()
         return {"message": "Deleted successfully"}, 200
+    
+class UpdateCapturedName(Resource):
+    def put(self, capture_id):
+        args = request.get_json()
+        new_name = args.get('new_name')
+
+        if not new_name:
+            return {"message": "New name is required"}, 400
+
+        captured = CapturedModel.query.get(capture_id)
+        if not captured:
+            return {"message": "Captured Pokémon not found"}, 404
+
+        captured.name = new_name
+        db.session.commit()
+        return {"message": "Captured Pokémon name updated successfully"}, 200
+    
 
 class AddToFavorite(Resource):
     def post(self):
@@ -156,11 +176,31 @@ api.add_resource(Login, '/login')
 
 api.add_resource(GetCaptured, '/captured/<int:user_id>')
 api.add_resource(DeleteCaptured, '/captured/delete/<int:capture_id>')
+api.add_resource(UpdateCapturedName, '/captured/update-name/<int:capture_id>')
 
 api.add_resource(AddToFavorite, '/favorites/add')
 api.add_resource(GetFavorites, '/favorites/<int:user_id>')
 api.add_resource(DeleteFavorite, '/favorites/delete/<int:favorite_id>')
 
+
+
+
+@app.route('/captured/rename/<int:capture_id>', methods=['PUT'])
+def rename_captured_pokemon(capture_id):
+    data = request.get_json()
+    new_name = data.get('new_name')
+
+    if not new_name:
+        return jsonify({'error': 'New name is required'}), 400
+
+    captured = CapturedModel.query.get(capture_id)
+    if not captured:
+        return jsonify({'error': 'Captured Pokémon not found'}), 404
+
+    captured.name = new_name
+    db.session.commit()
+
+    return jsonify({'message': 'Pokémon renamed successfully'}), 200
 
 @app.route('/captured/add', methods=['POST'])
 def add_captured_pokemon():
@@ -256,50 +296,52 @@ def get_captured_pokemons_by_username(username):
 
     return jsonify(results), 200
 
-@app.route('/trade', methods=['POST'])
-def trade_pokemon():
-    data = request.get_json()
+class Trade(Resource):
+    def post(self):
+        data = request.get_json()
+        sender_username = data.get('sender_username')
+        receiver_username = data.get('receiver_username')
+        name = data.get('name')
+        imageUrl = data.get('imageUrl')
+        description = data.get('description')
+        stats = data.get('stats')
+        types = data.get('types')
+        abilities = data.get('abilities')
 
-    from_username = data.get('from_username')
-    to_username = data.get('to_username')
-    name = data.get('name')
-    image_url = data.get('imageUrl')
-    description = data.get('description')
-    types = data.get('types')
-    abilities = data.get('abilities')
-    stats = data.get('stats')
+        if not all([sender_username, receiver_username, name, imageUrl, description, stats, types, abilities]):
+            return {"error": "Missing required trade data"}, 400
 
-    if not from_username or not to_username or not name or not image_url or not stats:
-        return jsonify({'error': 'Missing required fields'}), 400
+        sender = UserModel.query.filter_by(username=sender_username).first()
+        receiver = UserModel.query.filter_by(username=receiver_username).first()
 
-    if from_username == to_username:
-        return jsonify({'error': 'Cannot trade to yourself'}), 400
+        if not sender or not receiver:
+            return {"error": "Sender or receiver not found"}, 404
 
-    sender = UserModel.query.filter_by(username=from_username).first()
-    receiver = UserModel.query.filter_by(username=to_username).first()
+        # Find the Pokémon in the sender's captured list
+        pokemon = CapturedModel.query.filter_by(user_id=sender.id, name=name).first()
+        if not pokemon:
+            return {"error": "Pokémon not found in sender's captured list"}, 404
 
-    if not sender:
-        return jsonify({'error': 'Sender not found'}), 404
-    if not receiver:
-        return jsonify({'error': 'Receiver not found'}), 404
+        # Add Pokémon to receiver
+        new_pokemon = CapturedModel(
+            user_id=receiver.id,
+            name=name,
+            imageUrl=imageUrl,
+            description=description,
+            stats=stats,
+            types=types,
+            abilities=abilities
+        )
+        db.session.add(new_pokemon)
 
-    # Create new Pokémon under receiver
-    traded_pokemon = CapturedModel(
-        user_id=receiver.id,
-        name=name,
-        imageUrl=image_url,
-        description=description,
-        stats=stats,
-        types=types,
-        abilities=abilities
-    )
+        # Remove Pokémon from sender
+        db.session.delete(pokemon)
 
-    db.session.add(traded_pokemon)
-    db.session.commit()
+        db.session.commit()
 
-    return jsonify({
-        'message': f'{name} successfully traded from {from_username} to {to_username}'
-    }), 200
+        return {"message": f"{name} sent from {sender_username} to {receiver_username}"}, 201
+    
+api.add_resource(Trade, '/trade')
 
 @app.route('/users/by-username/<string:username>', methods=['GET'])
 def get_user_by_username(username):
@@ -308,9 +350,7 @@ def get_user_by_username(username):
         return jsonify({'error': 'User not found'}), 404
 
     return jsonify({
-        'id': user.id,
         'username': user.username,
-        'name': user.name
     }), 200
 
 

@@ -163,20 +163,11 @@ class _HomePageState extends State<HomePage> {
           BottomNavigationBarItem(
             icon: GestureDetector(
               onTap: () {
-                if (username != null && loadedPokemons != null) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => TradingPage(
-                        currentUsername: username!,
-                        myCapturedPokemons: loadedPokemons!,
-                      ),
-                    ),
-                  );
-                } else {
-                  // You can show a message or handle the loading state
-                  print('Data not loaded yet');
-                }
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => TradingPage(username: username!)),
+                );
               },
               child: Icon(
                 Icons.currency_exchange,
