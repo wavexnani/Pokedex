@@ -13,7 +13,7 @@ Future<void> capturePokemon({
   required Map<String, dynamic> stats,
 }) async {
   final url = Uri.parse(
-      "http://a3a7-2409-40f3-2049-b65f-d9bf-6538-9066-d955.ngrok-free.app/captured/add");
+      "http://4c95-2409-40f3-2049-b65f-7df6-e8d3-7741-2d5f.ngrok-free.app/captured/add");
 
   final response = await http.post(
     url,

@@ -160,6 +160,8 @@ class _HomePageState extends State<HomePage> {
         onTap: _onItemTapped,
         unselectedItemColor: Colors.black,
         selectedItemColor: Colors.blueGrey[900],
+        backgroundColor: Colors.blueGrey[900],
+        type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home, size: 32),
