@@ -31,7 +31,7 @@ class _SearchPageState extends State<SearchPage> {
     try {
       print("came before uri");
       final uri = Uri.parse(
-          "http://a3a7-2409-40f3-2049-b65f-d9bf-6538-9066-d955.ngrok-free.app/api?query=${query.toLowerCase().trim()}");
+          "http://4c95-2409-40f3-2049-b65f-7df6-e8d3-7741-2d5f.ngrok-free.app/api?query=${query.toLowerCase().trim()}");
 
       final response = await http.get(uri);
       print("came after uri");
