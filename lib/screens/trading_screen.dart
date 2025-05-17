@@ -49,7 +49,8 @@ class _TradingPageState extends State<TradingPage> {
   }
 
   Future<void> _handleSearch(String searchUsername) async {
-    final user = await UserService.getUserByUsername(searchUsername);
+    final user = await UserService.getUserByUsername(
+        searchUsername.trim().toLowerCase());
 
     if (user != null) {
       // Navigate to trade confirmation page
