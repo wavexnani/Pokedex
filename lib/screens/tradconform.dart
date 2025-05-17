@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class TradeConfirmPage extends StatelessWidget {
   final String fromUsername;
@@ -48,9 +50,18 @@ class TradeConfirmPage extends StatelessWidget {
                 Text(
                   selectedPokemon['name'],
                   style: const TextStyle(
-                      color: Colors.amberAccent,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold),
+                    color: Colors.amberAccent,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  "ID: ${selectedPokemon['id']}",
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 14,
+                  ),
                 ),
                 const SizedBox(height: 20),
                 Text(
@@ -59,8 +70,50 @@ class TradeConfirmPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
                 ElevatedButton.icon(
-                  onPressed: () {
-                    // TODO: Send trade request to backend
+                  onPressed: () async {
+                    final url = Uri.parse(
+                        'http://a3a7-2409-40f3-2049-b65f-d9bf-6538-9066-d955.ngrok-free.app/trade'); // Change this
+
+                    final tradeData = {
+                      "sender_username": fromUsername,
+                      "receiver_username": toUsername,
+                      "pokemon_id": selectedPokemon['id'],
+                    };
+
+                    try {
+                      final response = await http.post(
+                        url,
+                        headers: {"Content-Type": "application/json"},
+                        body: jsonEncode(tradeData),
+                      );
+
+                      if (response.statusCode == 200) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Trade request sent successfully!"),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                        Navigator.pop(context);
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                                "Failed to send trade request (${response.statusCode})"),
+                            backgroundColor: Colors.redAccent,
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      print("Error: $e");
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content:
+                              Text("An error occurred while sending request."),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
                   },
                   icon: const Icon(Icons.send),
                   label: const Text("Send Trade Request"),

@@ -182,6 +182,40 @@ api.add_resource(AddToFavorite, '/favorites/add')
 api.add_resource(GetFavorites, '/favorites/<int:user_id>')
 api.add_resource(DeleteFavorite, '/favorites/delete/<int:favorite_id>')
 
+
+
+# ------------------ HELPERS ------------------
+
+def get_user_id_by_username(username):
+    user = UserModel.query.filter_by(username=username).first()
+    if not user:
+        return None
+    return user.id
+
+def transfer_captured_pokemon(pokemon_id, sender_username, receiver_username):
+    sender_id = get_user_id_by_username(sender_username)
+    receiver_id = get_user_id_by_username(receiver_username)
+
+    if sender_id is None or receiver_id is None:
+        return {"message": "Sender or receiver not found"}, 404
+
+    pokemon = CapturedModel.query.get(pokemon_id)
+
+    if not pokemon:
+        return {"message": "Pokémon not found"}, 404
+
+    if pokemon.user_id != sender_id:
+        return {"message": "This Pokémon does not belong to the sender"}, 403
+
+    # Transfer ownership
+    pokemon.user_id = receiver_id
+    db.session.commit()
+
+    return {"message": f"Pokémon {pokemon.name} transferred from {sender_username} to {receiver_username}"}, 200
+
+
+
+
 @app.route('/captured/<string:username>', methods=['GET'])
 def get_captured_pokemons(username):
     user = UserModel.query.filter_by(username=username).first()
@@ -293,6 +327,21 @@ def get_user_by_username(username):
     return jsonify({
         'username': user.username,
     }), 200
+
+
+@app.route('/trade', methods=['POST'])
+def trade_pokemon():
+    data = request.get_json()
+
+    sender = data.get('sender_username')
+    receiver = data.get('receiver_username')
+    pokemon_id = data.get('pokemon_id')
+
+    if not sender or not receiver or pokemon_id is None:
+        return jsonify({'message': 'Sender, receiver, and Pokémon ID are required'}), 400
+
+    result, status = transfer_captured_pokemon(pokemon_id, sender, receiver)
+    return jsonify(result), status
 
 
 if __name__ == '__main__':
