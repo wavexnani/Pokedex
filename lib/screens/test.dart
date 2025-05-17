@@ -1,12 +1,12 @@
 // ignore_for_file: deprecated_member_use, avoid_print, use_key_in_widget_constructors
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:project_x/screens/game_screen.dart';
 import 'package:project_x/screens/indipoke_screen.dart';
 import 'package:project_x/screens/login_screen.dart';
 import 'package:project_x/screens/mycaptures.dart';
 import 'package:project_x/screens/search_screen.dart';
 import 'package:project_x/screens/trading_screen.dart';
-import 'package:project_x/utils/scrollable.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -19,6 +19,36 @@ class _HomePageState extends State<HomePage> {
   late Future<List<Map<String, dynamic>>> futurePokemonList;
   String? username;
   List<Map<String, dynamic>>? loadedPokemons;
+
+  int _selectedIndex = 0;
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+
+    switch (index) {
+      case 0:
+        Navigator.push(context, MaterialPageRoute(builder: (_) => HomePage()));
+        break;
+      case 1:
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (_) => MyCapturesPage(username: username!)));
+        break;
+      case 2:
+        Navigator.push(
+            context, MaterialPageRoute(builder: (_) => GuessPokemonPage()));
+        break;
+      case 3:
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (_) => TradingPage(username: username!)));
+        break;
+    }
+  }
 
   @override
   void initState() {
@@ -126,58 +156,29 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       backgroundColor: Colors.black,
       bottomNavigationBar: BottomNavigationBar(
-        unselectedItemColor: Colors.white,
-        selectedItemColor: Colors.amberAccent,
-        backgroundColor: Colors.blueGrey[900],
-        items: [
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        unselectedItemColor: Colors.black,
+        selectedItemColor: Colors.blueGrey[900],
+        items: const [
           BottomNavigationBarItem(
-              icon: GestureDetector(
-                onTap: () => {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => HomePage()),
-                  )
-                },
-                child: Icon(
-                  Icons.home,
-                  color: Colors.white,
-                ),
-              ),
-              label: 'Home'),
+            icon: Icon(Icons.home, size: 32),
+            label: 'Home',
+          ),
           BottomNavigationBarItem(
-              icon: GestureDetector(
-                onTap: () => {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => MyCapturesPage(username: username!),
-                    ),
-                  )
-                },
-                child: Icon(
-                  Icons.catching_pokemon,
-                  color: Colors.white,
-                ),
-              ),
-              label: 'My Captures'),
+            icon: Icon(Icons.catching_pokemon, size: 32),
+            label: 'My Captures',
+          ),
           BottomNavigationBarItem(
-            icon: GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => TradingPage(username: username!)),
-                );
-              },
-              child: Icon(
-                Icons.currency_exchange,
-                color: Colors.white,
-              ),
-            ),
+            icon: Icon(Icons.sports_esports, size: 32),
+            label: 'Game',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.currency_exchange, size: 32),
             label: 'Trading',
           ),
         ],
-      ), // Dark background for a futuristic look
+      ),
       appBar: AppBar(
         automaticallyImplyLeading: false,
         leading: GestureDetector(
@@ -293,11 +294,6 @@ class _HomePageState extends State<HomePage> {
             ),
 
             // Premium Pokémon Carousel
-            Padding(
-              padding:
-                  const EdgeInsets.symmetric(vertical: 20.0, horizontal: 66.0),
-              child: PremiumCardCarousel(),
-            ),
 
             // New Section with animated grid
             Padding(
