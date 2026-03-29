@@ -28,22 +28,34 @@ Solo developer — responsible for UI design, API integration, state management,
 ## Screenshots
 > Project screenshots are located in `assets/images/`
 
-![Screenshot 1](assets/images/img1.jpeg)
-![Screenshot 2](assets/images/img2.jpeg)
-![Screenshot 3](assets/images/img3.jpeg)
-![Screenshot 4](assets/images/img4.jpeg)
-![Screenshot 5](assets/images/img5.jpeg)
-![Screenshot 6](assets/images/img6.jpeg)
-![Screenshot 7](assets/images/img7.jpeg)
-![Screenshot 8](assets/images/img8.jpeg)
-![Screenshot 9](assets/images/img9.jpeg)
-![Screenshot 10](assets/images/img10.jpeg)
-![Screenshot 11](assets/images/img11.jpeg)
+<table align="center">
+  <tr>
+    <td><img src="assets/images/img11.jpeg" width="250"></td>
+    <td><img src="assets/images/img8.jpeg" width="250"></td>
+    <td><img src="assets/images/img7.jpeg" width="250"></td>
+  </tr>
+  <tr>
+    <td><img src="assets/images/img3.jpeg" width="250"></td>
+    <td><img src="assets/images/img1.jpeg" width="250"></td>
+    <td><img src="assets/images/img9.jpeg" width="250"></td>
+  </tr>
+  <tr>
+    <td><img src="assets/images/img6.jpeg" width="250"></td>
+    <td><img src="assets/images/img5.jpeg" width="250"></td>
+    <td><img src="assets/images/img2.jpeg" width="250"></td>
+  </tr>
+  <tr>
+    <td><img src="assets/images/img4.jpeg" width="250"></td>
+    <td><img src="assets/images/img10.jpeg" width="250"></td>
+
+  </tr>
+</table>
 
 ## Demo Video
 > Screen recording is located in `assets/video/`
 
 [Watch Demo](assets/video/vid1.mp4)
+
 
 ## Contra Listing Copy
 Pokedex is a feature-rich Flutter app built for users who want a smooth, engaging way to search, explore, and manage Pokemon collections from mobile. I developed the experience end-to-end using Dart and Flutter with REST API integration via `http`, persistent session handling with `shared_preferences`, and a clean modular codebase that is easy to scale. The app includes live search suggestions, polished detail views with dynamic stats UI, and robust user flows for authentication, captures, favorites, and trading. This project demonstrates that I can deliver complete client-ready mobile products that combine strong UI/UX, backend connectivity, and production-minded implementation.
