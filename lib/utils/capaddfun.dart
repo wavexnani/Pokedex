@@ -12,8 +12,7 @@ Future<void> capturePokemon({
   required List<String> abilities,
   required Map<String, dynamic> stats,
 }) async {
-  final url = Uri.parse(
-      "http://4c95-2409-40f3-2049-b65f-7df6-e8d3-7741-2d5f.ngrok-free.app/captured/add");
+  final url = Uri.parse("http://10.186.144.146:8080/captured/add");
 
   final response = await http.post(
     url,

@@ -16,6 +16,9 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  static List<Map<String, dynamic>>? _pokemonCache;
+  static DateTime? _pokemonCacheAt;
+
   late Future<List<Map<String, dynamic>>> futurePokemonList;
   String? username;
   List<Map<String, dynamic>>? loadedPokemons;
@@ -23,29 +26,47 @@ class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
 
   void _onItemTapped(int index) {
+    if (_selectedIndex == index) return;
+
     setState(() {
       _selectedIndex = index;
     });
 
     switch (index) {
       case 0:
-        Navigator.push(context, MaterialPageRoute(builder: (_) => HomePage()));
+        // Already on home page, avoid pushing a new HomePage and re-fetching data.
         break;
       case 1:
         Navigator.push(
             context,
             MaterialPageRoute(
-                builder: (_) => MyCapturesPage(username: username!)));
+                builder: (_) => MyCapturesPage(username: username!))).then((_) {
+          // Reset to home when returning from MyCapturesPage
+          setState(() {
+            _selectedIndex = 0;
+          });
+        });
         break;
       case 2:
         Navigator.push(
-            context, MaterialPageRoute(builder: (_) => GuessPokemonPage()));
+                context, MaterialPageRoute(builder: (_) => GuessPokemonPage()))
+            .then((_) {
+          // Reset to home when returning from GuessPokemonPage
+          setState(() {
+            _selectedIndex = 0;
+          });
+        });
         break;
       case 3:
         Navigator.push(
             context,
             MaterialPageRoute(
-                builder: (_) => TradingPage(username: username!)));
+                builder: (_) => TradingPage(username: username!))).then((_) {
+          // Reset to home when returning from TradingPage
+          setState(() {
+            _selectedIndex = 0;
+          });
+        });
         break;
     }
   }
@@ -55,14 +76,25 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     loadUsername();
 
-    final fetchedFuture = fetchPokemonDetails();
-    futurePokemonList = fetchedFuture;
+    final isCacheFresh = _pokemonCache != null &&
+        _pokemonCacheAt != null &&
+        DateTime.now().difference(_pokemonCacheAt!) <
+            const Duration(minutes: 20);
 
-    fetchedFuture.then((pokemonList) {
-      setState(() {
-        loadedPokemons = pokemonList;
+    if (isCacheFresh) {
+      futurePokemonList = Future.value(_pokemonCache!);
+      loadedPokemons = _pokemonCache;
+    } else {
+      futurePokemonList = fetchPokemonDetails();
+      futurePokemonList.then((pokemonList) {
+        if (!mounted) return;
+        setState(() {
+          loadedPokemons = pokemonList;
+          _pokemonCache = pokemonList;
+          _pokemonCacheAt = DateTime.now();
+        });
       });
-    });
+    }
   }
 
   Future<void> logout() async {
@@ -235,63 +267,144 @@ class _HomePageState extends State<HomePage> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Hero section with a dark background and neon accent
             Container(
-              height: 350,
+              height: 360,
+              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.black, Colors.blueGrey],
+                borderRadius: BorderRadius.circular(34),
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF101820), Color(0xFF1E2E3E)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(50),
-                  bottomRight: Radius.circular(50),
-                ),
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Welcome to Pokédex!',
-                      style: TextStyle(
-                        color: Colors.amberAccent,
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
+              child: Stack(
+                children: [
+                  Positioned(
+                    top: -55,
+                    right: -35,
+                    child: Container(
+                      width: 200,
+                      height: 200,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.amberAccent.withOpacity(0.10),
                       ),
                     ),
-                    SizedBox(height: 10),
-                    Text(
-                      'Explore your favorite Pokémon and discover their details.',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 18,
+                  ),
+                  Positioned(
+                    bottom: -45,
+                    left: -30,
+                    child: Container(
+                      width: 170,
+                      height: 170,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.cyanAccent.withOpacity(0.08),
                       ),
                     ),
-                    SizedBox(height: 30),
-                    ElevatedButton(
-                      onPressed: () {
-                        // Button action here
-                      },
-                      style: ButtonStyle(
-                        backgroundColor:
-                            MaterialStateProperty.all(Colors.amberAccent),
-                        padding: MaterialStateProperty.all(
-                            EdgeInsets.symmetric(horizontal: 30, vertical: 15)),
-                        shape: MaterialStateProperty.all(RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(25),
-                        )),
-                      ),
-                      child: Text(
-                        'Start Exploring',
-                        style: TextStyle(fontSize: 18),
-                      ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: Colors.white24),
+                          ),
+                          child: const Text(
+                            'Trainer Dashboard',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        Text(
+                          username == null
+                              ? 'Welcome back, Trainer!'
+                              : 'Welcome back, ${username!}!',
+                          style: const TextStyle(
+                            color: Colors.amberAccent,
+                            fontSize: 31,
+                            fontWeight: FontWeight.bold,
+                            height: 1.12,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        const Text(
+                          'Pick your next mission: search a Pokemon, jump into game mode, or browse what is trending today.',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 15,
+                            height: 1.4,
+                          ),
+                        ),
+                        const Spacer(),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => SearchPage(),
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(Icons.search),
+                                label: const Text('Search'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.amberAccent,
+                                  foregroundColor: Colors.black,
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 14),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => GuessPokemonPage(),
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(Icons.sports_esports),
+                                label: const Text('Play Game'),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: Colors.white,
+                                  side: const BorderSide(
+                                    color: Colors.white54,
+                                  ),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 14),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
 

@@ -215,7 +215,7 @@ class _PokemonDetailPageState extends State<PokemonDetailPage> {
                   ),
                   const SizedBox(height: 40),
 
-                  ElevatedButton(onPressed: (){}, child: Text("error"))
+
                 ],
               ),
             ),

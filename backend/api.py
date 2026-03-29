@@ -4,10 +4,35 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 import requests
+import threading
 
 app = Flask(__name__)
 CORS(app)
 api = Api(app)
+
+# Cache for Pokemon list to speed up search
+pokemon_names_cache = []
+cache_lock = threading.Lock()
+
+def load_pokemon_names():
+    """Load all Pokemon names from PokeAPI and cache them"""
+    global pokemon_names_cache
+    try:
+        all_pokemon = []
+        url = "https://pokeapi.co/api/v2/pokemon?limit=100000"
+        response = requests.get(url)
+        if response.status_code == 200:
+            data = response.json()
+            all_pokemon = [poke['name'] for poke in data.get('results', [])]
+        
+        with cache_lock:
+            pokemon_names_cache = all_pokemon
+        print(f"Loaded {len(all_pokemon)} Pokemon names")
+    except Exception as e:
+        print(f"Error loading Pokemon names: {e}")
+
+# Load Pokemon names on startup
+load_pokemon_names()
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///pokemon.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -272,6 +297,25 @@ def add_captured_pokemon():
     db.session.commit()
 
     return jsonify({'message': 'Captured Pokémon added successfully'}), 201
+
+
+# Search endpoint for real-time suggestions as user types
+@app.route('/api/search', methods=['GET'])
+def search_pokemon():
+    query = request.args.get("query", "").lower().strip()
+    
+    if not query or len(query) < 1:
+        return jsonify({"suggestions": []}), 200
+    
+    with cache_lock:
+        # Filter Pokemon names that start with or contain the query
+        suggestions = [name for name in pokemon_names_cache if query in name]
+        # Sort by relevance (names that start with query come first)
+        suggestions.sort(key=lambda x: (not x.startswith(query), len(x)))
+        # Return top 10 suggestions
+        suggestions = suggestions[:10]
+    
+    return jsonify({"suggestions": suggestions}), 200
 
 
 # This loads the pokemon which the user searches.

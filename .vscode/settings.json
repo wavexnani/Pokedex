@@ -1,3 +1,4 @@
 {
-    "cmake.sourceDirectory": "/Users/chandramouli/Desktop/pokedex/linux"
+    "cmake.sourceDirectory": "/Users/chandramouli/Desktop/pokedex/linux",
+    "java.configuration.updateBuildConfiguration": "automatic"
 }

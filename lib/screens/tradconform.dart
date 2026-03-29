@@ -71,8 +71,7 @@ class TradeConfirmPage extends StatelessWidget {
                 const SizedBox(height: 20),
                 ElevatedButton.icon(
                   onPressed: () async {
-                    final url = Uri.parse(
-                        'http://4c95-2409-40f3-2049-b65f-7df6-e8d3-7741-2d5f.ngrok-free.app/trade'); // Change this
+                    final url = Uri.parse('http://10.186.144.146:8080/trade');
 
                     final tradeData = {
                       "sender_username": fromUsername,

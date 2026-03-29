@@ -99,8 +99,7 @@ class LoginScreen extends StatelessWidget {
                   ElevatedButton(
                     onPressed: () async {
                       final response = await http.post(
-                        Uri.parse(
-                            'http://4c95-2409-40f3-2049-b65f-7df6-e8d3-7741-2d5f.ngrok-free.app/login'),
+                        Uri.parse('http://10.186.144.146:8080/login'),
                         headers: {"Content-Type": "application/json"},
                         body: jsonEncode({
                           "username": _emailController.text,

@@ -10,7 +10,7 @@ Future<void> favoritePokemon({
   required List<String> abilities,
   required Map<String, dynamic> stats,
 }) async {
-  final url = Uri.parse("http://<YOUR_BACKEND_URL>/favorites");
+  final url = Uri.parse("http://10.186.144.146:8080/favorites/add");
 
   final response = await http.post(
     url,
